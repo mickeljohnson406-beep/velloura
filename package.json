@@ -1,7 +1,7 @@
 {
   "name": "velloura-store",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^12.4.0",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest"
