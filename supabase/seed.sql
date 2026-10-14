@@ -1,0 +1,21 @@
+-- Velloura starter catalogue. Safe to rerun.
+insert into public.products (name,slug,description,category,price,image_url,tag,active) values
+('Sculpted Blazer','sculpted-blazer','A clean, structured blazer cut for an easy modern silhouette.','Women',89,'https://images.unsplash.com/photo-1591369822096-ffd140ec948f?auto=format&fit=crop&w=900&q=85','New',true),
+('Essential Overshirt','essential-overshirt','A versatile overshirt with a relaxed profile and understated finish.','Men',64,'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=900&q=85','Bestseller',true),
+('Velloura Court','velloura-court','Minimal low-profile sneakers designed for daily rotation.','Shoes',78,'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=85','New',true),
+('Minimal Carryall','minimal-carryall','A refined everyday carryall with a spacious, uncluttered interior.','Accessories',55,'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=900&q=85','Limited',true),
+('Fluid Midi Dress','fluid-midi-dress','A fluid midi silhouette balancing softness with a precise neckline.','Women',72,'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=85','New',true),
+('Relaxed Trouser','relaxed-trouser','Straight relaxed trousers designed to work across smart and casual wardrobes.','Men',58,'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=900&q=85','Core',true)
+on conflict (slug) do update set name=excluded.name,description=excluded.description,category=excluded.category,price=excluded.price,image_url=excluded.image_url,tag=excluded.tag,active=excluded.active,updated_at=now();
+
+with v(slug,size,color,sku,stock) as (values
+('sculpted-blazer','XS','Black','VB-BLK-XS',8),('sculpted-blazer','S','Black','VB-BLK-S',10),('sculpted-blazer','M','Black','VB-BLK-M',10),('sculpted-blazer','L','Black','VB-BLK-L',7),('sculpted-blazer','XS','Stone','VB-STN-XS',6),('sculpted-blazer','S','Stone','VB-STN-S',8),('sculpted-blazer','M','Stone','VB-STN-M',8),('sculpted-blazer','L','Stone','VB-STN-L',5),
+('essential-overshirt','S','Black','VO-BLK-S',10),('essential-overshirt','M','Black','VO-BLK-M',12),('essential-overshirt','L','Black','VO-BLK-L',12),('essential-overshirt','XL','Black','VO-BLK-XL',8),('essential-overshirt','S','Cream','VO-CRM-S',8),('essential-overshirt','M','Cream','VO-CRM-M',10),('essential-overshirt','L','Cream','VO-CRM-L',10),('essential-overshirt','XL','Cream','VO-CRM-XL',6),
+('velloura-court','38','White','VC-WHT-38',6),('velloura-court','39','White','VC-WHT-39',8),('velloura-court','40','White','VC-WHT-40',10),('velloura-court','41','White','VC-WHT-41',10),('velloura-court','42','White','VC-WHT-42',8),('velloura-court','43','White','VC-WHT-43',6),('velloura-court','38','Black','VC-BLK-38',5),('velloura-court','39','Black','VC-BLK-39',7),('velloura-court','40','Black','VC-BLK-40',8),('velloura-court','41','Black','VC-BLK-41',8),('velloura-court','42','Black','VC-BLK-42',7),('velloura-court','43','Black','VC-BLK-43',5),
+('minimal-carryall','One Size','Black','MC-BLK-OS',10),('minimal-carryall','One Size','Tan','MC-TAN-OS',8),
+('fluid-midi-dress','XS','Espresso','MD-ESP-XS',6),('fluid-midi-dress','S','Espresso','MD-ESP-S',8),('fluid-midi-dress','M','Espresso','MD-ESP-M',8),('fluid-midi-dress','L','Espresso','MD-ESP-L',6),('fluid-midi-dress','XS','Black','MD-BLK-XS',6),('fluid-midi-dress','S','Black','MD-BLK-S',8),('fluid-midi-dress','M','Black','MD-BLK-M',8),('fluid-midi-dress','L','Black','MD-BLK-L',6),
+('relaxed-trouser','28','Charcoal','RT-CHR-28',6),('relaxed-trouser','30','Charcoal','RT-CHR-30',8),('relaxed-trouser','32','Charcoal','RT-CHR-32',10),('relaxed-trouser','34','Charcoal','RT-CHR-34',8),('relaxed-trouser','36','Charcoal','RT-CHR-36',6),('relaxed-trouser','28','Stone','RT-STN-28',5),('relaxed-trouser','30','Stone','RT-STN-30',7),('relaxed-trouser','32','Stone','RT-STN-32',8),('relaxed-trouser','34','Stone','RT-STN-34',7),('relaxed-trouser','36','Stone','RT-STN-36',5)
+)
+insert into public.product_variants(product_id,size,color,sku,stock,active)
+select p.id,v.size,v.color,v.sku,v.stock,true from v join public.products p on p.slug=v.slug
+on conflict(product_id,size,color) do update set sku=excluded.sku,stock=excluded.stock,active=true;
