@@ -1,91 +1,18 @@
--- Velloura initial Supabase schema
+-- Velloura Supabase schema
 create extension if not exists pgcrypto;
-
-create table if not exists public.products (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text not null unique,
-  description text,
-  category text not null check (category in ('Women','Men','Shoes','Accessories')),
-  price numeric(10,2) not null check (price >= 0),
-  image_url text,
-  tag text,
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.product_variants (
-  id uuid primary key default gen_random_uuid(),
-  product_id uuid not null references public.products(id) on delete cascade,
-  size text not null,
-  color text not null,
-  sku text unique,
-  stock integer not null default 0 check (stock >= 0),
-  active boolean not null default true,
-  unique(product_id,size,color)
-);
-
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  phone text,
-  role text not null default 'customer' check (role in ('customer','admin')),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.orders (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  reference text not null unique,
-  email text not null,
-  phone text not null,
-  first_name text not null,
-  last_name text not null,
-  address text not null,
-  city text not null,
-  country text not null default 'Zimbabwe',
-  subtotal numeric(10,2) not null check (subtotal >= 0),
-  status text not null default 'pending' check (status in ('pending','confirmed','processing','shipped','completed','cancelled')),
-  payment_status text not null default 'unpaid' check (payment_status in ('unpaid','pending','paid','failed','refunded')),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.order_items (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid not null references public.orders(id) on delete cascade,
-  product_id uuid references public.products(id) on delete set null,
-  product_name text not null,
-  size text not null,
-  color text not null,
-  quantity integer not null check (quantity > 0),
-  unit_price numeric(10,2) not null check (unit_price >= 0)
-);
-
-alter table public.products enable row level security;
-alter table public.product_variants enable row level security;
-alter table public.profiles enable row level security;
-alter table public.orders enable row level security;
-alter table public.order_items enable row level security;
-
-create policy "Public can view active products" on public.products for select using (active = true);
-create policy "Public can view active variants" on public.product_variants for select using (active = true);
-create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
-create policy "Users can view own orders" on public.orders for select using (auth.uid() = user_id);
-create policy "Users can view own order items" on public.order_items for select using (
-  exists (select 1 from public.orders o where o.id = order_id and o.user_id = auth.uid())
-);
-
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.profiles (id, full_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name',''));
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users
-for each row execute procedure public.handle_new_user();
+create table if not exists public.products (id uuid primary key default gen_random_uuid(),name text not null,slug text not null unique,description text,category text not null check(category in('Women','Men','Shoes','Accessories')),price numeric(10,2) not null check(price>=0),image_url text,tag text,active boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create table if not exists public.product_variants (id uuid primary key default gen_random_uuid(),product_id uuid not null references public.products(id) on delete cascade,size text not null,color text not null,sku text unique,stock integer not null default 0 check(stock>=0),active boolean not null default true,unique(product_id,size,color));
+create table if not exists public.profiles (id uuid primary key references auth.users(id) on delete cascade,full_name text,phone text,role text not null default 'customer' check(role in('customer','admin')),created_at timestamptz not null default now());
+create table if not exists public.orders (id uuid primary key default gen_random_uuid(),user_id uuid references auth.users(id) on delete set null,reference text not null unique,email text not null,phone text not null,first_name text not null,last_name text not null,address text not null,city text not null,country text not null default 'Zimbabwe',subtotal numeric(10,2) not null check(subtotal>=0),status text not null default 'pending' check(status in('pending','confirmed','processing','shipped','completed','cancelled')),payment_status text not null default 'unpaid' check(payment_status in('unpaid','pending','paid','failed','refunded')),created_at timestamptz not null default now());
+create table if not exists public.order_items (id uuid primary key default gen_random_uuid(),order_id uuid not null references public.orders(id) on delete cascade,product_id uuid references public.products(id) on delete set null,product_name text not null,size text not null,color text not null,quantity integer not null check(quantity>0),unit_price numeric(10,2) not null check(unit_price>=0));
+alter table public.products enable row level security; alter table public.product_variants enable row level security; alter table public.profiles enable row level security; alter table public.orders enable row level security; alter table public.order_items enable row level security;
+drop policy if exists "Public can view active products" on public.products; create policy "Public can view active products" on public.products for select using(active=true);
+drop policy if exists "Public can view active variants" on public.product_variants; create policy "Public can view active variants" on public.product_variants for select using(active=true);
+drop policy if exists "Users can view own profile" on public.profiles; create policy "Users can view own profile" on public.profiles for select using(auth.uid()=id);
+drop policy if exists "Users can update own profile" on public.profiles; create policy "Users can update own profile" on public.profiles for update using(auth.uid()=id);
+drop policy if exists "Customers can create orders" on public.orders; create policy "Customers can create orders" on public.orders for insert with check(user_id is null or auth.uid()=user_id);
+drop policy if exists "Users can view own orders" on public.orders; create policy "Users can view own orders" on public.orders for select using(auth.uid()=user_id);
+drop policy if exists "Customers can create order items" on public.order_items; create policy "Customers can create order items" on public.order_items for insert with check(exists(select 1 from public.orders o where o.id=order_id and (o.user_id is null or o.user_id=auth.uid())));
+drop policy if exists "Users can view own order items" on public.order_items; create policy "Users can view own order items" on public.order_items for select using(exists(select 1 from public.orders o where o.id=order_id and o.user_id=auth.uid()));
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$ begin insert into public.profiles(id,full_name) values(new.id,coalesce(new.raw_user_meta_data->>'full_name','')) on conflict(id) do nothing; return new; end; $$;
+drop trigger if exists on_auth_user_created on auth.users; create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
