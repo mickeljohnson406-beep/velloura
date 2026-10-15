@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {supabase} from './supabase';
+import './admin-products.css';
 const money=n=>'$'+Number(n||0).toFixed(2);
 const slugify=s=>s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 function ProductManager(){const[products,setProducts]=useState([]),[editing,setEditing]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
